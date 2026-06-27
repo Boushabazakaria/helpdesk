@@ -3,9 +3,9 @@
 namespace App\Controller;
 
 use App\Entity\Ticket;
-use App\Enum\TicketPriority;
-use App\Enum\TicketStatus;
+use App\Entity\TicketResponse;
 use App\Form\TicketFilterType;
+use App\Form\TicketResponseType;
 use App\Form\TicketStatusType;
 use App\Form\TicketType;
 use App\Service\TicketService;
@@ -76,37 +76,91 @@ class TicketController extends AbstractController
     }
 
     /**
-     * Détail d'un ticket avec formulaire de statut (agents) et réponses.
+     * Détail d'un ticket avec formulaire de réponse et de changement de statut.
      */
-    #[Route('/{id}', name: 'show', methods: ['GET', 'POST'])]
-    public function show(Ticket $ticket, Request $request): Response
+    #[Route('/{id}', name: 'show', methods: ['GET'])]
+    public function show(Ticket $ticket): Response
     {
         /** @var \App\Entity\User $user */
         $user = $this->getUser();
 
-        // Vérification d'accès : un user normal ne peut voir que ses tickets
         if (!$this->ticketService->canUserViewTicket($ticket, $user)) {
             throw $this->createAccessDeniedException('Vous n\'avez pas accès à ce ticket.');
         }
 
-        // Formulaire de changement de statut (agents/admins uniquement)
-        $statusForm = null;
-        if ($user->isAgent()) {
-            $statusForm = $this->createForm(TicketStatusType::class, ['status' => $ticket->getStatus()]);
-            $statusForm->handleRequest($request);
+        // Formulaire de réponse — affiché si le ticket n'est pas fermé
+        $responseForm = null;
+        if (!$ticket->isClosed()) {
+            $responseForm = $this->createForm(TicketResponseType::class, new TicketResponse(), [
+                'action' => $this->generateUrl('app_ticket_reply', ['id' => $ticket->getId()]),
+                'method' => 'POST',
+            ]);
+        }
 
-            if ($statusForm->isSubmitted() && $statusForm->isValid()) {
-                $newStatus = $statusForm->get('status')->getData();
-                $this->ticketService->changeStatus($ticket, $newStatus, $user);
-                $this->addFlash('success', 'Statut mis à jour.');
-                return $this->redirectToRoute('app_ticket_show', ['id' => $ticket->getId()]);
-            }
+        // Formulaire de changement de statut — agents/admins uniquement
+        $statusForm = null;
+        if ($user->isAgent() && !$ticket->isClosed()) {
+            $statusForm = $this->createForm(TicketStatusType::class, ['status' => $ticket->getStatus()], [
+                'action' => $this->generateUrl('app_ticket_status', ['id' => $ticket->getId()]),
+                'method' => 'POST',
+            ]);
         }
 
         return $this->render('ticket/show.html.twig', [
-            'ticket'     => $ticket,
-            'statusForm' => $statusForm,
+            'ticket'       => $ticket,
+            'responseForm' => $responseForm,
+            'statusForm'   => $statusForm,
         ]);
+    }
+
+    /**
+     * Soumettre une réponse à un ticket.
+     * Séparé de show() pour respecter POST-Redirect-GET et éviter la double soumission.
+     */
+    #[Route('/{id}/reply', name: 'reply', methods: ['POST'])]
+    public function reply(Ticket $ticket, Request $request): Response
+    {
+        /** @var \App\Entity\User $user */
+        $user = $this->getUser();
+
+        if (!$this->ticketService->canUserViewTicket($ticket, $user)) {
+            throw $this->createAccessDeniedException();
+        }
+
+        $response = new TicketResponse();
+        $form     = $this->createForm(TicketResponseType::class, $response);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            // L'agent peut cocher "marquer comme résolu" en même temps qu'il répond
+            $closeTicket = $request->request->getBoolean('close_ticket');
+            $this->ticketService->addResponse($ticket, $response, $user, $closeTicket);
+            $this->addFlash('success', 'Réponse ajoutée.');
+        }
+
+        return $this->redirectToRoute('app_ticket_show', ['id' => $ticket->getId()]);
+    }
+
+    /**
+     * Changer le statut d'un ticket (agents/admins).
+     */
+    #[Route('/{id}/status', name: 'status', methods: ['POST'])]
+    #[IsGranted('ROLE_AGENT')]
+    public function changeStatus(Ticket $ticket, Request $request): Response
+    {
+        /** @var \App\Entity\User $user */
+        $user = $this->getUser();
+
+        $form = $this->createForm(TicketStatusType::class);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $newStatus = $form->get('status')->getData();
+            $this->ticketService->changeStatus($ticket, $newStatus, $user);
+            $this->addFlash('success', 'Statut mis à jour.');
+        }
+
+        return $this->redirectToRoute('app_ticket_show', ['id' => $ticket->getId()]);
     }
 
     /**

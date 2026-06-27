@@ -3,6 +3,7 @@
 namespace App\Service;
 
 use App\Entity\Ticket;
+use App\Entity\TicketResponse;
 use App\Entity\User;
 use App\Enum\TicketStatus;
 use App\Repository\TicketRepository;
@@ -90,6 +91,36 @@ class TicketService
             agent:    $filters['agent'] ?? null,
             creator:  $user->isAgent() ? null : $user, // un user ne voit que ses tickets
         );
+    }
+
+    /**
+     * Ajoute une réponse à un ticket.
+     * Règle métier :
+     * - On ne peut pas répondre à un ticket fermé.
+     * - Si c'est la première réponse d'un agent sur un ticket ouvert → passe à IN_PROGRESS.
+     * - Un agent peut clore le ticket en même temps qu'il répond (via $closeTicket).
+     */
+    public function addResponse(Ticket $ticket, TicketResponse $response, User $author, bool $closeTicket = false): void
+    {
+        if ($ticket->isClosed()) {
+            throw new \LogicException('Impossible de répondre à un ticket fermé.');
+        }
+
+        $response->setTicket($ticket);
+        $response->setAuthor($author);
+
+        // Règle : si un agent répond et que le ticket est encore "ouvert", on le passe "en cours"
+        if ($author->isAgent() && $ticket->getStatus() === TicketStatus::OPEN) {
+            $ticket->setStatus(TicketStatus::IN_PROGRESS);
+        }
+
+        // Règle : l'agent peut résoudre/fermer le ticket en même temps qu'il répond
+        if ($closeTicket && $author->isAgent()) {
+            $ticket->setStatus(TicketStatus::RESOLVED);
+        }
+
+        $this->em->persist($response);
+        $this->em->flush();
     }
 
     public function updateTicket(Ticket $ticket): void
