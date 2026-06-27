@@ -1,0 +1,170 @@
+{% extends 'base.html.twig' %}
+{% block title %}Ticket #{{ ticket.id }}{% endblock %}
+
+{% block body %}
+<div class="max-w-4xl mx-auto">
+
+    {# Breadcrumb #}
+    <div class="mb-6">
+        <a href="{{ path('app_ticket_user_tickets') }}"
+           class="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-3">
+            ← Retour aux tickets
+        </a>
+        <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">{{ ticket.title }}</h1>
+                <div class="flex flex-wrap items-center gap-2 mt-2">
+                    <span class="text-xs text-gray-400">Ticket #{{ ticket.id }}</span>
+                    {% include 'ticket/_badge_status.html.twig' with {status: ticket.status} %}
+                    {% include 'ticket/_badge_priority.html.twig' with {priority: ticket.priority} %}
+                </div>
+            </div>
+
+            {# Actions admin #}
+            {% if is_granted('ROLE_ADMIN') %}
+            <div class="flex gap-2 shrink-0">
+                <a href="{{ path('app_ticket_edit', {id: ticket.id}) }}"
+                   class="px-3 py-1.5 text-xs font-medium bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors">
+                    Modifier
+                </a>
+                <form method="post" action="{{ path('app_ticket_delete', {id: ticket.id}) }}"
+                      onsubmit="return confirm('Supprimer ce ticket ?')">
+                    <input type="hidden" name="_token" value="{{ csrf_token('delete_ticket_' ~ ticket.id) }}">
+                    <button type="submit"
+                            class="px-3 py-1.5 text-xs font-medium bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors">
+                        Supprimer
+                    </button>
+                </form>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        {# Colonne principale #}
+        <div class="lg:col-span-2 space-y-6">
+
+            {# Description du ticket #}
+            <div class="bg-white rounded-xl border border-gray-200 p-6">
+                <h2 class="text-sm font-semibold text-gray-700 mb-3">Description</h2>
+                <div class="text-gray-700 text-sm leading-relaxed whitespace-pre-line">{{ ticket.description }}</div>
+            </div>
+
+            {# Section réponses — sera remplie à l'étape 4 #}
+            <div class="bg-white rounded-xl border border-gray-200 p-6">
+                <h2 class="text-sm font-semibold text-gray-700 mb-4">
+                    Échanges
+                    {% if ticket.responses|length > 0 %}
+                        <span class="ml-1 text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
+                            {{ ticket.responses|length }}
+                        </span>
+                    {% endif %}
+                </h2>
+
+                {% if ticket.responses is empty %}
+                    <p class="text-gray-400 text-sm">Aucune réponse pour l'instant.</p>
+                {% else %}
+                    <div class="space-y-4">
+                        {% for response in ticket.responses %}
+                        <div class="flex gap-3">
+                            <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center shrink-0 text-xs font-bold text-blue-600">
+                                {{ response.author.firstName|first }}{{ response.author.lastName|first }}
+                            </div>
+                            <div class="flex-1 bg-gray-50 rounded-lg px-4 py-3">
+                                <div class="flex items-center justify-between mb-1">
+                                    <span class="text-sm font-medium text-gray-800">{{ response.author.fullName }}</span>
+                                    <span class="text-xs text-gray-400">{{ response.createdAt|date('d/m/Y H:i') }}</span>
+                                </div>
+                                <p class="text-sm text-gray-600 whitespace-pre-line">{{ response.content }}</p>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                {# Formulaire de réponse — sera activé à l'étape 4 #}
+                {% if not ticket.isClosed() %}
+                <div class="mt-6 pt-4 border-t border-gray-100">
+                    <p class="text-xs text-gray-400 italic">Le formulaire de réponse sera disponible à l'étape 4.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        {# Colonne latérale — infos + actions #}
+        <div class="space-y-4">
+
+            {# Informations #}
+            <div class="bg-white rounded-xl border border-gray-200 p-5">
+                <h3 class="text-sm font-semibold text-gray-700 mb-4">Informations</h3>
+                <dl class="space-y-3 text-sm">
+                    <div>
+                        <dt class="text-xs text-gray-400 uppercase tracking-wider">Créé par</dt>
+                        <dd class="text-gray-700 font-medium mt-0.5">{{ ticket.creator.fullName }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs text-gray-400 uppercase tracking-wider">Agent assigné</dt>
+                        <dd class="text-gray-700 font-medium mt-0.5">
+                            {{ ticket.assignedAgent ? ticket.assignedAgent.fullName : 'Non assigné' }}
+                        </dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs text-gray-400 uppercase tracking-wider">Créé le</dt>
+                        <dd class="text-gray-700 mt-0.5">{{ ticket.createdAt|date('d/m/Y à H:i') }}</dd>
+                    </div>
+                    {% if ticket.updatedAt %}
+                    <div>
+                        <dt class="text-xs text-gray-400 uppercase tracking-wider">Mis à jour le</dt>
+                        <dd class="text-gray-700 mt-0.5">{{ ticket.updatedAt|date('d/m/Y à H:i') }}</dd>
+                    </div>
+                    {% endif %}
+                    {% if ticket.resolvedAt %}
+                    <div>
+                        <dt class="text-xs text-gray-400 uppercase tracking-wider">Résolu le</dt>
+                        <dd class="text-green-600 font-medium mt-0.5">{{ ticket.resolvedAt|date('d/m/Y à H:i') }}</dd>
+                    </div>
+                    {% endif %}
+                </dl>
+            </div>
+
+            {# Actions agent : s'assigner + changer statut #}
+            {% if is_granted('ROLE_AGENT') %}
+
+                {# Bouton d'assignation #}
+                {% if not ticket.isAssigned() and not ticket.isClosed() %}
+                <div class="bg-white rounded-xl border border-gray-200 p-5">
+                    <h3 class="text-sm font-semibold text-gray-700 mb-3">Assignation</h3>
+                    <form method="post" action="{{ path('app_ticket_assign', {id: ticket.id}) }}">
+                        <input type="hidden" name="_token" value="{{ csrf_token('assign_ticket_' ~ ticket.id) }}">
+                        <button type="submit"
+                                class="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors">
+                            M'assigner ce ticket
+                        </button>
+                    </form>
+                </div>
+                {% elseif ticket.assignedAgent and ticket.assignedAgent.id == app.user.id %}
+                <div class="bg-blue-50 rounded-xl border border-blue-100 p-4 text-sm text-blue-700">
+                    Vous êtes assigné à ce ticket.
+                </div>
+                {% endif %}
+
+                {# Formulaire de changement de statut #}
+                {% if statusForm and not ticket.isClosed() %}
+                <div class="bg-white rounded-xl border border-gray-200 p-5">
+                    <h3 class="text-sm font-semibold text-gray-700 mb-3">Changer le statut</h3>
+                    {{ form_start(statusForm, {attr: {class: 'space-y-3'}}) }}
+                        {{ form_widget(statusForm.status, {attr: {class: 'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white'}}) }}
+                        <button type="submit"
+                                class="w-full py-2 px-4 bg-gray-800 hover:bg-gray-900 text-white text-sm font-medium rounded-lg transition-colors">
+                            Mettre à jour
+                        </button>
+                    {{ form_end(statusForm) }}
+                </div>
+                {% endif %}
+
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

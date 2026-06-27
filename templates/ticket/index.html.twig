@@ -1,8 +1,110 @@
 {% extends 'base.html.twig' %}
-{% block title %}Mes tickets{% endblock %}
+{% block title %}Tickets{% endblock %}
+
 {% block body %}
-<h1 class="text-2xl font-bold text-gray-900 mb-6">Mes tickets</h1>
-<div class="bg-white rounded-xl border border-gray-200 p-6 text-gray-500">
-    Le CRUD tickets sera disponible à l'étape 3.
+<div class="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-900">
+            {% if is_granted('ROLE_AGENT') %}Tous les tickets{% else %}Mes tickets{% endif %}
+        </h1>
+        <p class="text-gray-500 text-sm mt-1">{{ tickets|length }} ticket(s) trouvé(s)</p>
+    </div>
+    <a href="{{ path('app_ticket_new') }}"
+       class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+        </svg>
+        Nouveau ticket
+    </a>
 </div>
+
+{# Barre de filtres #}
+<div class="bg-white rounded-xl border border-gray-200 p-4 mb-6">
+    {{ form_start(filterForm, {attr: {class: 'flex flex-wrap gap-3 items-end'}}) }}
+        <div class="flex-1 min-w-[160px]">
+            {{ form_label(filterForm.status, null, {label_attr: {class: 'block text-xs font-medium text-gray-600 mb-1'}}) }}
+            {{ form_widget(filterForm.status, {attr: {class: 'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none'}}) }}
+        </div>
+        <div class="flex-1 min-w-[160px]">
+            {{ form_label(filterForm.priority, null, {label_attr: {class: 'block text-xs font-medium text-gray-600 mb-1'}}) }}
+            {{ form_widget(filterForm.priority, {attr: {class: 'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none'}}) }}
+        </div>
+        {% if filterForm.agent is defined %}
+        <div class="flex-1 min-w-[160px]">
+            {{ form_label(filterForm.agent, null, {label_attr: {class: 'block text-xs font-medium text-gray-600 mb-1'}}) }}
+            {{ form_widget(filterForm.agent, {attr: {class: 'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none'}}) }}
+        </div>
+        {% endif %}
+        <button type="submit"
+                class="px-4 py-2 bg-gray-800 hover:bg-gray-900 text-white text-sm font-medium rounded-lg transition-colors">
+            Filtrer
+        </button>
+        <a href="{{ path('app_ticket_user_tickets') }}"
+           class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition-colors">
+            Réinitialiser
+        </a>
+    {{ form_end(filterForm) }}
+</div>
+
+{# Liste des tickets #}
+{% if tickets is empty %}
+    <div class="bg-white rounded-xl border border-gray-200 p-12 text-center">
+        <svg class="w-12 h-12 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+        </svg>
+        <p class="text-gray-500 font-medium">Aucun ticket trouvé</p>
+        <p class="text-gray-400 text-sm mt-1">Créez votre premier ticket ou modifiez les filtres</p>
+    </div>
+{% else %}
+    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <table class="w-full text-sm">
+            <thead class="bg-gray-50 border-b border-gray-200">
+                <tr>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">#</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Titre</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider hidden sm:table-cell">Priorité</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Statut</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider hidden md:table-cell">Agent</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider hidden lg:table-cell">Créé le</th>
+                    <th class="px-4 py-3"></th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                {% for ticket in tickets %}
+                <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="px-4 py-3 text-gray-400 font-mono text-xs">#{{ ticket.id }}</td>
+                    <td class="px-4 py-3">
+                        <a href="{{ path('app_ticket_show', {id: ticket.id}) }}"
+                           class="font-medium text-gray-900 hover:text-blue-600 transition-colors">
+                            {{ ticket.title }}
+                        </a>
+                        {% if is_granted('ROLE_AGENT') %}
+                        <div class="text-xs text-gray-400 mt-0.5">par {{ ticket.creator.fullName }}</div>
+                        {% endif %}
+                    </td>
+                    <td class="px-4 py-3 hidden sm:table-cell">
+                        {% include 'ticket/_badge_priority.html.twig' with {priority: ticket.priority} %}
+                    </td>
+                    <td class="px-4 py-3">
+                        {% include 'ticket/_badge_status.html.twig' with {status: ticket.status} %}
+                    </td>
+                    <td class="px-4 py-3 text-gray-500 hidden md:table-cell">
+                        {{ ticket.assignedAgent ? ticket.assignedAgent.fullName : '—' }}
+                    </td>
+                    <td class="px-4 py-3 text-gray-400 text-xs hidden lg:table-cell">
+                        {{ ticket.createdAt|date('d/m/Y H:i') }}
+                    </td>
+                    <td class="px-4 py-3 text-right">
+                        <a href="{{ path('app_ticket_show', {id: ticket.id}) }}"
+                           class="text-blue-600 hover:text-blue-800 text-xs font-medium">
+                            Voir →
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endif %}
 {% endblock %}
