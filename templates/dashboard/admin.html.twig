@@ -1,11 +1,180 @@
 {% extends 'base.html.twig' %}
 {% block title %}Dashboard Admin{% endblock %}
+
 {% block body %}
-<div class="mb-6">
+<div class="mb-8">
     <h1 class="text-2xl font-bold text-gray-900">Dashboard Admin</h1>
-    <p class="text-gray-500 mt-1">Bienvenue, {{ app.user.fullName }}</p>
+    <p class="text-gray-500 mt-1">Vue d'ensemble de l'activité du Helpdesk</p>
 </div>
-<div class="bg-white rounded-xl border border-gray-200 p-6 text-gray-500">
-    Les statistiques seront disponibles à l'étape 5.
+
+{# ── Cartes KPI principales ── #}
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+
+    {# Total tickets #}
+    <div class="bg-white rounded-xl border border-gray-200 p-5">
+        <div class="flex items-center justify-between mb-3">
+            <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Total tickets</span>
+            <div class="w-9 h-9 bg-gray-100 rounded-lg flex items-center justify-center">
+                <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                </svg>
+            </div>
+        </div>
+        <p class="text-3xl font-bold text-gray-900">{{ totalTickets }}</p>
+    </div>
+
+    {# Ouverts #}
+    <div class="bg-white rounded-xl border border-blue-100 p-5">
+        <div class="flex items-center justify-between mb-3">
+            <span class="text-xs font-semibold text-blue-600 uppercase tracking-wider">Ouverts</span>
+            <div class="w-9 h-9 bg-blue-50 rounded-lg flex items-center justify-center">
+                <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+        </div>
+        <p class="text-3xl font-bold text-blue-700">{{ statusStats['open'].count }}</p>
+        <p class="text-xs text-blue-400 mt-1">en attente de prise en charge</p>
+    </div>
+
+    {# En cours #}
+    <div class="bg-white rounded-xl border border-yellow-100 p-5">
+        <div class="flex items-center justify-between mb-3">
+            <span class="text-xs font-semibold text-yellow-600 uppercase tracking-wider">En cours</span>
+            <div class="w-9 h-9 bg-yellow-50 rounded-lg flex items-center justify-center">
+                <svg class="w-5 h-5 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                </svg>
+            </div>
+        </div>
+        <p class="text-3xl font-bold text-yellow-700">{{ statusStats['in_progress'].count }}</p>
+        <p class="text-xs text-yellow-400 mt-1">traitement en cours</p>
+    </div>
+
+    {# Temps moyen de résolution #}
+    <div class="bg-white rounded-xl border border-green-100 p-5">
+        <div class="flex items-center justify-between mb-3">
+            <span class="text-xs font-semibold text-green-600 uppercase tracking-wider">Tps. résolution</span>
+            <div class="w-9 h-9 bg-green-50 rounded-lg flex items-center justify-center">
+                <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+        </div>
+        <p class="text-3xl font-bold text-green-700">{{ avgResolution }}h</p>
+        <p class="text-xs text-green-400 mt-1">temps moyen de résolution</p>
+    </div>
+</div>
+
+{# ── Ligne du bas : répartition statuts + stats agents ── #}
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+
+    {# Répartition par statut (barres CSS) #}
+    <div class="bg-white rounded-xl border border-gray-200 p-6">
+        <h2 class="text-sm font-semibold text-gray-700 mb-5">Répartition par statut</h2>
+        <div class="space-y-4">
+            {% for key, stat in statusStats %}
+                {% set pct = totalTickets > 0 ? ((stat.count / totalTickets) * 100)|round : 0 %}
+                {% set barColors = {
+                    'blue':   'bg-blue-500',
+                    'yellow': 'bg-yellow-400',
+                    'green':  'bg-green-500',
+                    'gray':   'bg-gray-400',
+                } %}
+                <div>
+                    <div class="flex justify-between text-xs text-gray-600 mb-1.5">
+                        <span class="font-medium">{{ stat.label }}</span>
+                        <span>{{ stat.count }} <span class="text-gray-400">({{ pct }}%)</span></span>
+                    </div>
+                    <div class="w-full bg-gray-100 rounded-full h-2">
+                        <div class="{{ barColors[stat.color] ?? 'bg-gray-400' }} h-2 rounded-full transition-all duration-500"
+                             style="width: {{ pct }}%"></div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        {# Légende #}
+        <div class="flex flex-wrap gap-3 mt-5 pt-4 border-t border-gray-100">
+            {% for key, stat in statusStats %}
+                {% set dotColors = {'blue': 'bg-blue-500', 'yellow': 'bg-yellow-400', 'green': 'bg-green-500', 'gray': 'bg-gray-400'} %}
+                <span class="flex items-center gap-1.5 text-xs text-gray-500">
+                    <span class="w-2.5 h-2.5 rounded-full {{ dotColors[stat.color] ?? 'bg-gray-400' }}"></span>
+                    {{ stat.label }}
+                </span>
+            {% endfor %}
+        </div>
+    </div>
+
+    {# Stats par agent #}
+    <div class="bg-white rounded-xl border border-gray-200 p-6">
+        <div class="flex items-center justify-between mb-5">
+            <h2 class="text-sm font-semibold text-gray-700">Tickets par agent</h2>
+            <a href="{{ path('app_ticket_user_tickets') }}"
+               class="text-xs text-blue-600 hover:underline">Voir tous →</a>
+        </div>
+
+        {% if agentStats is empty %}
+            <div class="text-center py-8">
+                <p class="text-gray-400 text-sm">Aucun ticket assigné pour l'instant.</p>
+            </div>
+        {% else %}
+            <div class="space-y-3">
+                {% for row in agentStats %}
+                    {% set pct = agentMax > 0 ? ((row.total / agentMax) * 100)|round : 0 %}
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-xs font-bold text-blue-600 shrink-0">
+                            {{ row.firstName|first }}{{ row.lastName|first }}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="font-medium text-gray-700 truncate">{{ row.firstName }} {{ row.lastName }}</span>
+                                <span class="text-gray-500 ml-2 shrink-0">{{ row.total }} ticket(s)</span>
+                            </div>
+                            <div class="w-full bg-gray-100 rounded-full h-1.5">
+                                <div class="bg-blue-400 h-1.5 rounded-full" style="width: {{ pct }}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+{# ── Activité des 7 derniers jours ── #}
+<div class="bg-white rounded-xl border border-gray-200 p-6">
+    <h2 class="text-sm font-semibold text-gray-700 mb-5">Tickets créés — 7 derniers jours</h2>
+
+    {% if weeklyActivity is empty %}
+        <p class="text-gray-400 text-sm text-center py-6">Aucun ticket créé cette semaine.</p>
+    {% else %}
+        <div class="flex items-end gap-2 h-28">
+            {% for day in weeklyActivity %}
+                {% set barH = weeklyMax > 0 ? ((day.total / weeklyMax) * 100)|round : 0 %}
+                <div class="flex-1 flex flex-col items-center gap-1">
+                    <span class="text-xs font-semibold text-gray-600">{{ day.total }}</span>
+                    <div class="w-full bg-blue-500 rounded-t-md transition-all"
+                         style="height: {{ (barH * 80 / 100)|round }}px; min-height: 4px;"></div>
+                    <span class="text-xs text-gray-400 whitespace-nowrap">
+                        {{ day.date|date('d/m') }}
+                    </span>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+</div>
+
+{# ── Lien vers gestion complète ── #}
+<div class="mt-6 flex flex-wrap gap-3">
+    <a href="{{ path('app_ticket_user_tickets') }}"
+       class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors">
+        Gérer les tickets
+    </a>
+    <a href="{{ path('app_register') }}"
+       class="px-4 py-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-lg transition-colors">
+        Ajouter un utilisateur
+    </a>
 </div>
 {% endblock %}

@@ -7,7 +7,6 @@ use App\Entity\User;
 use App\Enum\TicketPriority;
 use App\Enum\TicketStatus;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
-use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -87,16 +86,58 @@ class TicketRepository extends ServiceEntityRepository
     }
 
     /**
-     * Temps moyen de résolution en heures (uniquement tickets résolus)
+     * Temps moyen de résolution en heures (SQL natif car TIMESTAMPDIFF n'est pas DQL).
      */
     public function getAverageResolutionTimeInHours(): float
     {
-        $result = $this->createQueryBuilder('t')
-            ->select('AVG(TIMESTAMPDIFF(SECOND, t.createdAt, t.resolvedAt)) as avgSeconds')
-            ->where('t.resolvedAt IS NOT NULL')
+        // On utilise la connexion DBAL pour exécuter du SQL natif MySQL
+        $conn = $this->getEntityManager()->getConnection();
+        $result = $conn->fetchOne(
+            'SELECT AVG(TIMESTAMPDIFF(SECOND, created_at, resolved_at)) FROM ticket WHERE resolved_at IS NOT NULL'
+        );
+
+        return $result ? round((float) $result / 3600, 1) : 0.0;
+    }
+
+    /**
+     * Nombre total de tickets.
+     */
+    public function countTotal(): int
+    {
+        return (int) $this->createQueryBuilder('t')
+            ->select('COUNT(t.id)')
             ->getQuery()
             ->getSingleScalarResult();
+    }
 
-        return $result ? round($result / 3600, 1) : 0.0;
+    /**
+     * Tickets des 7 derniers jours groupés par date — pour le mini-graphe du dashboard.
+     * Retourne [['date' => 'YYYY-MM-DD', 'total' => N], ...]
+     */
+    public function countByDayLastWeek(): array
+    {
+        $conn = $this->getEntityManager()->getConnection();
+        return $conn->fetchAllAssociative(
+            "SELECT DATE(created_at) as date, COUNT(*) as total
+             FROM ticket
+             WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+             GROUP BY DATE(created_at)
+             ORDER BY date ASC"
+        );
+    }
+
+    /**
+     * Tickets assignés à un agent spécifique, triés par priorité décroissante.
+     */
+    public function findAssignedTo(User $agent): array
+    {
+        return $this->createQueryBuilder('t')
+            ->where('t.assignedAgent = :agent')
+            ->andWhere('t.status != :closed')
+            ->setParameter('agent', $agent)
+            ->setParameter('closed', TicketStatus::CLOSED)
+            ->orderBy('t.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
     }
 }
