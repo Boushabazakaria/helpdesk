@@ -1,5 +1,7 @@
 # Helpdesk - Application de gestion de tickets
 
+[![CI](https://github.com/Boushabazakaria/helpdesk/actions/workflows/ci.yml/badge.svg)](https://github.com/Boushabazakaria/helpdesk/actions/workflows/ci.yml)
+
 Application Helpdesk développée avec **Symfony 7** dans le cadre d'un mini-projet DevOps.
 Elle permet aux utilisateurs de soumettre des tickets de support, aux agents de les traiter, et aux administrateurs de piloter l'activité via un dashboard.
 
@@ -105,6 +107,14 @@ php bin/phpunit tests/Unit/
 # Tests fonctionnels uniquement
 php bin/phpunit tests/Functional/
 ```
+
+## Démarrage avec Docker
+
+```bash
+docker compose up --build
+```
+
+L'application sera disponible sur http://localhost:8000.
 
 ### Couverture des tests
 
