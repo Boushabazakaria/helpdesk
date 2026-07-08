@@ -26,14 +26,34 @@ Elle permet aux utilisateurs de soumettre des tickets de support, aux agents de 
 ## Stack technique
 
 - **Backend** : PHP 8.2, Symfony 7, Doctrine ORM
+- **Frontend** : Twig + AssetMapper
 - **Base de données** : MySQL 8.0
-- **Assets** : AssetMapper + Tailwind CSS CDN (aucun build Node.js)
 - **Tests** : PHPUnit 11 (unitaires + fonctionnels)
-- **CI** : GitHub Actions
+- **CI/CD** : GitHub Actions + Docker Compose
+- **Conteneurisation** : Docker + Docker Compose
 
 ---
 
-## Installation
+## Installation rapide
+
+### Prérequis
+
+- Docker et Docker Compose
+- Git
+- PHP 8.2+ et Composer (si vous voulez lancer localement sans Docker)
+
+### Avec Docker
+
+```bash
+git clone https://github.com/Boushabazakaria/helpdesk.git
+cd helpdesk
+cp .env.example .env
+docker compose up --build
+```
+
+L'application sera disponible sur http://localhost:8000.
+
+### Sans Docker
 
 ### Prérequis
 
@@ -108,14 +128,6 @@ php bin/phpunit tests/Unit/
 php bin/phpunit tests/Functional/
 ```
 
-## Démarrage avec Docker
-
-```bash
-docker compose up --build
-```
-
-L'application sera disponible sur http://localhost:8000.
-
 ### Couverture des tests
 
 | Suite | Fichier | Ce qui est testé |
@@ -127,6 +139,16 @@ L'application sera disponible sur http://localhost:8000.
 | **Fonctionnel** | `TicketControllerTest` | CRUD tickets, isolation par rôle, contrôle d'accès |
 
 ---
+
+## Rapport et livrables
+
+Le rapport écrit du mini-projet DevOps peut être ajouté dans un dossier docs/ à côté du code source, avec :
+- présentation du sujet et des objectifs,
+- architecture de l'application,
+- stratégie Git et workflow,
+- explication de la conteneurisation,
+- description du pipeline CI/CD,
+- conclusion et perspectives.
 
 ## Comptes de démonstration
 
