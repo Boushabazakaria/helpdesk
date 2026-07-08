@@ -38,11 +38,11 @@ class RegistrationFormType extends AbstractType
                 'second_options'  => ['label' => 'Confirmer le mot de passe', 'attr' => ['placeholder' => '••••••••']],
                 'invalid_message' => 'Les mots de passe ne correspondent pas.',
                 'constraints'     => [
-                    new NotBlank(['message' => 'Le mot de passe est obligatoire.']),
-                    new Length([
-                        'min'        => 8,
-                        'minMessage' => 'Le mot de passe doit faire au moins {{ limit }} caractères.',
-                    ]),
+                    new NotBlank(message: 'Le mot de passe est obligatoire.'),
+                    new Length(
+                        min: 8,
+                        minMessage: 'Le mot de passe doit faire au moins {{ limit }} caractères.',
+                    ),
                 ],
             ]);
     }
