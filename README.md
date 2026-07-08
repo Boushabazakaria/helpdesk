@@ -1,8 +1,6 @@
-# Helpdesk — Application de gestion de tickets
+# Helpdesk - Application de gestion de tickets
 
-![CI](https://github.com/votre-username/helpdesk/actions/workflows/ci.yml/badge.svg)
-![PHP](https://img.shields.io/badge/PHP-8.2%2B-blue)
-![Symfony](https://img.shields.io/badge/Symfony-7-black)
+[![CI](https://github.com/Boushabazakaria/helpdesk/actions/workflows/ci.yml/badge.svg)](https://github.com/Boushabazakaria/helpdesk/actions/workflows/ci.yml)
 
 Application Helpdesk développée avec **Symfony 7** dans le cadre d'un mini-projet DevOps.
 Elle permet aux utilisateurs de soumettre des tickets de support, aux agents de les traiter, et aux administrateurs de piloter l'activité via un dashboard.
@@ -25,17 +23,43 @@ Elle permet aux utilisateurs de soumettre des tickets de support, aux agents de 
 
 ---
 
-## Stack technique
+## Architecture / Stack
 
 - **Backend** : PHP 8.2, Symfony 7, Doctrine ORM
+- **Frontend** : Twig + AssetMapper
 - **Base de données** : MySQL 8.0
-- **Assets** : AssetMapper + Tailwind CSS CDN (aucun build Node.js)
 - **Tests** : PHPUnit 11 (unitaires + fonctionnels)
-- **CI** : GitHub Actions
+- **CI/CD** : GitHub Actions + Docker Compose
+- **Conteneurisation** : Docker + Docker Compose
+
+L’application suit une architecture simple en couches :
+- contrôleurs Symfony pour la logique HTTP,
+- services métier pour la gestion des tickets,
+- entités Doctrine pour la persistance,
+- formulaires et templates Twig pour l’interface utilisateur.
 
 ---
 
-## Installation
+## Installation rapide
+
+### Prérequis
+
+- Docker et Docker Compose
+- Git
+- PHP 8.2+ et Composer (si vous voulez lancer localement sans Docker)
+
+### Avec Docker
+
+```bash
+git clone https://github.com/Boushabazakaria/helpdesk.git
+cd helpdesk
+cp .env.example .env
+docker compose up --build
+```
+
+L'application sera disponible sur http://localhost:8000.
+
+### Sans Docker
 
 ### Prérequis
 
@@ -78,18 +102,27 @@ APP_SECRET=votre_secret_aleatoire_32_caracteres
 
 ---
 
-## Lancement
+## How to run
+
+### Option 1 — Avec Docker
 
 ```bash
-# Avec Symfony CLI (recommandé)
-symfony serve
-
-# Ou avec le serveur PHP intégré
-php -S localhost:8000 -t public/
-
-# Accéder à l'application
-open http://localhost:8000
+docker compose up --build
 ```
+
+Puis ouvrir : http://localhost:8000
+
+### Option 2 — Sans Docker
+
+```bash
+composer install
+cp .env.example .env
+php bin/console doctrine:database:create
+php bin/console doctrine:migrations:migrate
+php -S localhost:8000 -t public/
+```
+
+Puis ouvrir : http://localhost:8000
 
 ---
 
@@ -122,44 +155,15 @@ php bin/phpunit tests/Functional/
 
 ---
 
-## Architecture
+## Rapport et livrables
 
-```
-src/
-├── Controller/          # Orchestration HTTP (thin controllers)
-│   ├── DashboardController.php
-│   ├── SecurityController.php
-│   ├── RegistrationController.php
-│   └── TicketController.php
-├── Entity/              # Modèles Doctrine (User, Ticket, TicketResponse)
-├── Enum/                # PHP 8.1 backed enums (TicketStatus, TicketPriority)
-├── Form/                # Formulaires Symfony (TicketType, TicketFilterType...)
-├── Repository/          # Queries Doctrine (findWithFilters, countByStatus...)
-└── Service/             # Logique métier (TicketService)
-
-tests/
-├── Unit/                # Tests PHPUnit sans BDD (mocks)
-└── Functional/          # Tests WebTestCase avec BDD de test
-```
-
-**Principe clé** : aucune logique métier dans les controllers. Tout passe par `TicketService` — les controllers se contentent de traiter la requête HTTP et d'appeler le service.
-
----
-
-## Commits
-
-Ce projet suit la convention **Conventional Commits** :
-
-```
-feat:     nouvelle fonctionnalité
-fix:      correction de bug
-test:     ajout/modification de tests
-docs:     documentation
-chore:    configuration, dépendances
-refactor: refactorisation sans changement fonctionnel
-```
-
----
+Le rapport écrit du mini-projet DevOps peut être ajouté dans un dossier docs/ à côté du code source, avec :
+- présentation du sujet et des objectifs,
+- architecture de l'application,
+- stratégie Git et workflow,
+- explication de la conteneurisation,
+- description du pipeline CI/CD,
+- conclusion et perspectives.
 
 ## Comptes de démonstration
 
