@@ -24,7 +24,8 @@ COPY composer.json composer.lock symfony.lock ./
 RUN composer install --no-interaction --prefer-dist --no-scripts
 
 COPY . .
-RUN composer dump-autoload --optimize \
+RUN cp .env.example .env \
+    && composer dump-autoload --optimize \
     && php bin/console cache:warmup
 
 EXPOSE 8000
