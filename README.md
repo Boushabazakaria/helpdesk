@@ -1,8 +1,4 @@
-# Helpdesk — Application de gestion de tickets
-
-![CI](https://github.com/votre-username/helpdesk/actions/workflows/ci.yml/badge.svg)
-![PHP](https://img.shields.io/badge/PHP-8.2%2B-blue)
-![Symfony](https://img.shields.io/badge/Symfony-7-black)
+# Helpdesk - Application de gestion de tickets
 
 Application Helpdesk développée avec **Symfony 7** dans le cadre d'un mini-projet DevOps.
 Elle permet aux utilisateurs de soumettre des tickets de support, aux agents de les traiter, et aux administrateurs de piloter l'activité via un dashboard.
@@ -119,45 +115,6 @@ php bin/phpunit tests/Functional/
 | **Unitaire** | `TicketPriorityTest` | Labels, ordre de tri de l'enum |
 | **Fonctionnel** | `SecurityControllerTest` | Login, register, redirections, accès non authentifié |
 | **Fonctionnel** | `TicketControllerTest` | CRUD tickets, isolation par rôle, contrôle d'accès |
-
----
-
-## Architecture
-
-```
-src/
-├── Controller/          # Orchestration HTTP (thin controllers)
-│   ├── DashboardController.php
-│   ├── SecurityController.php
-│   ├── RegistrationController.php
-│   └── TicketController.php
-├── Entity/              # Modèles Doctrine (User, Ticket, TicketResponse)
-├── Enum/                # PHP 8.1 backed enums (TicketStatus, TicketPriority)
-├── Form/                # Formulaires Symfony (TicketType, TicketFilterType...)
-├── Repository/          # Queries Doctrine (findWithFilters, countByStatus...)
-└── Service/             # Logique métier (TicketService)
-
-tests/
-├── Unit/                # Tests PHPUnit sans BDD (mocks)
-└── Functional/          # Tests WebTestCase avec BDD de test
-```
-
-**Principe clé** : aucune logique métier dans les controllers. Tout passe par `TicketService` — les controllers se contentent de traiter la requête HTTP et d'appeler le service.
-
----
-
-## Commits
-
-Ce projet suit la convention **Conventional Commits** :
-
-```
-feat:     nouvelle fonctionnalité
-fix:      correction de bug
-test:     ajout/modification de tests
-docs:     documentation
-chore:    configuration, dépendances
-refactor: refactorisation sans changement fonctionnel
-```
 
 ---
 
