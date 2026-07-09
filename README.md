@@ -155,16 +155,6 @@ php bin/phpunit tests/Functional/
 
 ---
 
-## Rapport et livrables
-
-Le rapport écrit du mini-projet DevOps peut être ajouté dans un dossier docs/ à côté du code source, avec :
-- présentation du sujet et des objectifs,
-- architecture de l'application,
-- stratégie Git et workflow,
-- explication de la conteneurisation,
-- description du pipeline CI/CD,
-- conclusion et perspectives.
-
 ## Comptes de démonstration
 
 Après installation, créez des comptes via `/register` ou insérez directement en base.
